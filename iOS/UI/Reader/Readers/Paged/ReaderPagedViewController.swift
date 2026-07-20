@@ -428,10 +428,28 @@ extension ReaderPagedViewController {
     }
 
     func loadPages(in range: ClosedRange<Int>) {
+        // 遍历并加载当前预加载范围内的所有页面
         for i in range {
             guard i > 0 else { continue }
             guard i <= displayPageCount else { break }
             loadPage(at: i)
+        }
+
+        // 如果存在前一章预览页，页面列表中会多一个元素，所以索引需要偏移 1
+        let prefixOffset = previousChapter != nil ? 1 : 0
+        
+        // 将传递进来的页面页码范围，转换为控制器数组 (pageViewControllers) 对应的下标索引范围
+        let keepRange = (range.lowerBound + prefixOffset)...(range.upperBound + prefixOffset)
+        
+        // 遍历整个章节所有的页面控制器
+        for (idx, controller) in pageViewControllers.enumerated() {
+            // 过滤：仅清理漫画图片页面类型 (.page)，避免清理掉章节过渡/信息提示页 (.info)
+            guard case .page = controller.type else { continue }
+            
+            // 如果该控制器所在的索引 idx 超出了要保留的 keepRange，则释放其持有的图片数据，释放内存
+            if !keepRange.contains(idx) {
+                controller.clearPage()
+            }
         }
     }
 

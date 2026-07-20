@@ -210,12 +210,7 @@ actor KomgaSourceRunner: Runner {
         let pageBaseUrl = URL(string: "api/v1/books/\(chapter.id)/pages/", relativeTo: baseUrl)
 
         return pages.compactMap { page in
-            let convert = if !["image/jpeg", "image/png", "image/gif", "image/webp"].contains(page.mediaType) {
-                "?convert=png"
-            } else {
-                ""
-            }
-            let url = URL(string: "\(page.number)\(convert)", relativeTo: pageBaseUrl)
+            let url = URL(string: "\(page.number)/raw", relativeTo: pageBaseUrl)
             return url.flatMap {
                 .init(content: .url(url: $0))
             }
