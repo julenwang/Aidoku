@@ -36,6 +36,7 @@ class ReaderPageView: UIView {
     private var liveTextTask: Task<Void, Never>?
     private var liveTextGeneration = 0
 
+    private var isCleared = false
     private var completion: ((Bool) -> Void)?
 
     // MARK: - Reload functionality properties
@@ -93,6 +94,7 @@ class ReaderPageView: UIView {
     }
 
     func setPage(_ page: Page, sourceId: String? = nil, skipProcessing: Bool = false) async -> Bool {
+        isCleared = false
         // Store current page data for reload functionality
         self.currentPage = page
 
@@ -226,6 +228,12 @@ class ReaderPageView: UIView {
             guard let response else {
                 return false
             }
+            guard !isCleared else {
+                if let currentImageRequest {
+                    ImagePipeline.shared.cache.removeCachedImage(for: currentImageRequest)
+                }
+                return false
+            }
             imageView.image = response.image
             if response.container.type == .gif, let data = response.container.data {
                 imageView.animate(withGIFData: data)
@@ -249,6 +257,12 @@ class ReaderPageView: UIView {
                             result = nil
                     }
                     if let result {
+                        guard !isCleared else {
+                            if let currentImageRequest {
+                                ImagePipeline.shared.cache.removeCachedImage(for: currentImageRequest)
+                            }
+                            return false
+                        }
                         imageView.image = result.image
                         if result.type == .gif, let data = result.data {
                             imageView.animate(withGIFData: data)
@@ -320,6 +334,7 @@ class ReaderPageView: UIView {
             return image
         }.value
         guard let image else { return false }
+        guard !isCleared else { return false }
 
         ImagePipeline.shared.cache.storeCachedImage(ImageContainer(image: image), for: request)
         imageView.image = image
@@ -373,6 +388,7 @@ class ReaderPageView: UIView {
         }.value
 
         guard let result else { return false }
+        guard !isCleared else { return false }
 
         if result.isText, let text = String(data: result.data, encoding: .utf8) {
             setPageText(text: text)
@@ -412,6 +428,7 @@ class ReaderPageView: UIView {
             return image
         }.value
         guard let image else { return false }
+        guard !isCleared else { return false }
 
         ImagePipeline.shared.cache.storeCachedImage(ImageContainer(image: image), for: request)
         imageView.image = image
@@ -543,6 +560,14 @@ class ReaderPageView: UIView {
         liveTextTask = nil
         guard #available(iOS 16.0, *) else { return }
         imageAnalaysisInteraction?.analysis = nil
+    }
+
+    func clear() {
+        isCleared = true
+        // 不取消 imageTask，让它在后台默默完成并落盘
+        cancelLiveTextAnalysis()
+        imageView.image = nil
+        progressView.isHidden = true
     }
 }
 

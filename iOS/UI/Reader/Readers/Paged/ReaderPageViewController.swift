@@ -242,7 +242,7 @@ class ReaderPageViewController: BaseObservingViewController {
 
     func clearPage() {
         pageSet = false
-        pageView?.imageView.image = nil
+        pageView?.clear()
         zoomView?.zoomEnabled = false
         imageAspectRatio = nil
     }

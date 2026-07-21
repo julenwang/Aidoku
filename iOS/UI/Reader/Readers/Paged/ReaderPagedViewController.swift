@@ -446,6 +446,10 @@ extension ReaderPagedViewController {
             // 过滤：仅清理漫画图片页面类型 (.page)，避免清理掉章节过渡/信息提示页 (.info)
             guard case .page = controller.type else { continue }
             
+            // 保护前一章和后一章的跨章节预览页不被误清理
+            let isCurrentChapterPage = idx >= (1 + prefixOffset) && idx <= (displayPageCount + prefixOffset)
+            guard isCurrentChapterPage else { continue }
+            
             // 如果该控制器所在的索引 idx 超出了要保留的 keepRange，则释放其持有的图片数据，释放内存
             if !keepRange.contains(idx) {
                 controller.clearPage()

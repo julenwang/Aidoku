@@ -210,7 +210,7 @@ actor KomgaSourceRunner: Runner {
         let pageBaseUrl = URL(string: "api/v1/books/\(chapter.id)/pages/", relativeTo: baseUrl)
 
         return pages.compactMap { page in
-            let url = URL(string: "\(page.number)/raw", relativeTo: pageBaseUrl)
+            let url = URL(string: "\(page.number)", relativeTo: pageBaseUrl)
             return url.flatMap {
                 .init(content: .url(url: $0))
             }
