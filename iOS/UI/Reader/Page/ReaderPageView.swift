@@ -102,7 +102,7 @@ class ReaderPageView: UIView {
         if sourceId != nil {
             self.sourceId = sourceId
         }
-        cancelLiveTextAnalysis()
+        cancelLiveTextAnalysis(clearResult: true)
 
         if var image = page.image {
             if !skipProcessing {
@@ -539,6 +539,12 @@ class ReaderPageView: UIView {
         else {
             return
         }
+        
+        // 如果已经存在解析结果，则直接跳过，避免重复消耗算力
+        if imageAnalaysisInteraction?.analysis != nil {
+            return
+        }
+        
         liveTextGeneration += 1
         let generation = liveTextGeneration
         liveTextTask?.cancel()
@@ -563,18 +569,22 @@ class ReaderPageView: UIView {
         }
     }
 
-    private func cancelLiveTextAnalysis() {
+    private func cancelLiveTextAnalysis(clearResult: Bool = false) {
         liveTextGeneration += 1
         liveTextTask?.cancel()
         liveTextTask = nil
         guard #available(iOS 16.0, *) else { return }
-        imageAnalaysisInteraction?.analysis = nil
+        
+        // 只有在彻底回收页面时，才清空 OCR 结果
+        if clearResult {
+            imageAnalaysisInteraction?.analysis = nil
+        }
     }
 
     func clear() {
         isCleared = true
         // 不取消 imageTask，让它在后台默默完成并落盘
-        cancelLiveTextAnalysis()
+        cancelLiveTextAnalysis(clearResult: true)
         imageView.image = nil
         progressView.isHidden = true
     }
@@ -584,7 +594,8 @@ class ReaderPageView: UIView {
         if visible {
             startLiveTextAnalysis()
         } else {
-            cancelLiveTextAnalysis()
+            // 滑出视口时，只打断正在进行的解析任务，但保留已有的 OCR 结果
+            cancelLiveTextAnalysis(clearResult: false)
         }
     }
 }
