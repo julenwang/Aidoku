@@ -548,10 +548,13 @@ class ReaderPageView: UIView {
         liveTextGeneration += 1
         let generation = liveTextGeneration
         liveTextTask?.cancel()
+        
+        let isDoublePage = (parent as? ReaderPageViewController)?.isInDoublePageController == true
+        let delaySeconds: UInt64 = isDoublePage ? 6 : 4
+        
         liveTextTask = Task { [weak self] in
             do {
-                // 等待 3 秒钟。如果在这 3 秒内用户滑走了，任务会被 cancel，这里会抛出异常并直接 return，从而避免了重度解析。
-                try await Task.sleep(nanoseconds: 3_000_000_000)
+                try await Task.sleep(nanoseconds: delaySeconds * 1_000_000_000)
             } catch {
                 return
             }
