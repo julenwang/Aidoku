@@ -161,6 +161,16 @@ class ReaderPageViewController: BaseObservingViewController {
         loadPageBackground() // fix page background resetting on system appearance change
     }
 
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        pageView?.setViewportVisible(true)
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        pageView?.setViewportVisible(false)
+    }
+
     func setPage(_ page: Page, sourceId: String? = nil, skipProcessing: Bool = false) {
         guard !pageSet, let pageView else { return }
         pageSet = true

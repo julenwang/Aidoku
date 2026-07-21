@@ -145,8 +145,16 @@ class ReaderDoublePageViewController: BaseViewController {
         NSLayoutConstraint.activate(pageLayoutConstraints)
     }
 
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        firstPageController.pageView?.setViewportVisible(true)
+        secondPageController.pageView?.setViewportVisible(true)
+    }
+
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
+        firstPageController.pageView?.setViewportVisible(false)
+        secondPageController.pageView?.setViewportVisible(false)
         NSLayoutConstraint.deactivate(pageLayoutConstraints)
         for controller in [firstPageController, secondPageController] {
             guard

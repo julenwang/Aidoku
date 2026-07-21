@@ -37,6 +37,7 @@ class ReaderPageView: UIView {
     private var liveTextGeneration = 0
 
     private var isCleared = false
+    private var isVisible = false
     private var completion: ((Bool) -> Void)?
 
     // MARK: - Reload functionality properties
@@ -530,6 +531,7 @@ class ReaderPageView: UIView {
 
     // use Task to run LiveText analysis to prevent wide image jumps
     private func startLiveTextAnalysis() {
+        guard isVisible else { return }
         guard
             #available(iOS 16.0, *),
             imageAnalaysisInteraction != nil,
@@ -541,6 +543,13 @@ class ReaderPageView: UIView {
         let generation = liveTextGeneration
         liveTextTask?.cancel()
         liveTextTask = Task { [weak self] in
+            do {
+                // 等待 3 秒钟。如果在这 3 秒内用户滑走了，任务会被 cancel，这里会抛出异常并直接 return，从而避免了重度解析。
+                try await Task.sleep(nanoseconds: 3_000_000_000)
+            } catch {
+                return
+            }
+            
             guard !Task.isCancelled else { return }
             let analysis = try? await Self.sharedImageAnalyzer.analyze(image, configuration: .init([.text, .machineReadableCode]))
             guard !Task.isCancelled else { return }
@@ -568,6 +577,15 @@ class ReaderPageView: UIView {
         cancelLiveTextAnalysis()
         imageView.image = nil
         progressView.isHidden = true
+    }
+
+    func setViewportVisible(_ visible: Bool) {
+        isVisible = visible
+        if visible {
+            startLiveTextAnalysis()
+        } else {
+            cancelLiveTextAnalysis()
+        }
     }
 }
 
