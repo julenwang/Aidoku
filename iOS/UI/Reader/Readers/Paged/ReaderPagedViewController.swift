@@ -1000,8 +1000,8 @@ extension ReaderPagedViewController: UIPageViewControllerDelegate {
                 } else {
                     delegate?.setCurrentPage(actualPage, position: nil)
                 }
-                // preload 1 before and pagesToPreload ahead
-                loadPages(in: page - 1 - (usesDoublePages ? 1 : 0)...page + pagesToPreload + (usesDoublePages ? 1 : 0))
+                // preload symmetrically: pagesToPreload ahead and pagesToPreload behind
+                loadPages(in: page - pagesToPreload - (usesDoublePages ? 1 : 0)...page + pagesToPreload + (usesDoublePages ? 1 : 0))
 
                 if
                     usesDoublePages,
@@ -1050,8 +1050,8 @@ extension ReaderPagedViewController: UIPageViewControllerDelegate {
             guard let idx = getIndex(of: controller, pos: .first) else { continue }
             let page = pageIndex(from: idx)
             if usesDoublePages {
-                // include adjacent spreads so wide-image state is resolved for the next data source query
-                loadPages(in: page - 2...page + 3)
+                // include adjacent spreads symmetrically so wide-image state is resolved
+                loadPages(in: page - (pagesToPreload + 1)...page + (pagesToPreload + 1))
             } else {
                 loadPage(at: page)
             }
