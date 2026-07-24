@@ -17,6 +17,8 @@ struct MangaView: View {
 
     @State private var editMode = EditMode.inactive
     @State private var selectedChapters = Set<String>()
+    
+    @State private var gridColumns: [GridItem] = Self.getColumns()
 
     @State private var showingCoverView = false
     @State private var showRemoveAllConfirm = false
@@ -69,7 +71,7 @@ struct MangaView: View {
                         }
                         .frame(maxWidth: .infinity)
                     } else {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 105), spacing: 12)], spacing: 12) {
+                        LazyVGrid(columns: gridColumns, spacing: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12) {
                             ForEach(viewModel.chapters.indices, id: \.self) { index in
                                 let chapter = viewModel.chapters[index]
                                 viewForChapter(chapter, index: index)
@@ -95,7 +97,7 @@ struct MangaView: View {
                             ListDivider()
                         }
 
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 105), spacing: 12)], spacing: 12) {
+                        LazyVGrid(columns: gridColumns, spacing: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12) {
                             ForEach(viewModel.otherDownloadedChapters.indices, id: \.self) { index in
                                 let chapter = viewModel.otherDownloadedChapters[index]
                                 viewForChapter(chapter, index: index, secondSection: true)
@@ -249,6 +251,12 @@ struct MangaView: View {
                 .navigationTransitionZoom(sourceID: chapter, in: transitionNamespace)
             }
             .environment(\.editMode, $editMode)
+            .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
+                // Delay slightly to ensure bounds are updated
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    gridColumns = Self.getColumns()
+                }
+            }
         }
 
         if #available(iOS 26.0, *) {
@@ -268,6 +276,35 @@ struct MangaView: View {
                     }
                 }
         }
+    }
+
+    static private func getColumns() -> [GridItem] {
+        let layout = UserDefaults.standard.string(forKey: "Appearance.layout")
+        let containerWidth = UIScreen.main.bounds.size.width - 32 // Approximate horizontal padding
+
+        let itemsPerRow: Int
+        switch layout {
+            case "standard":
+                let idealWidth: CGFloat = 180
+                itemsPerRow = max(1, Int(floor(containerWidth / idealWidth)))
+            case "compact":
+                let idealWidth: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 150 : 120
+                itemsPerRow = max(1, Int(floor(containerWidth / idealWidth)))
+            default: // custom
+                let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+                let orientation =
+                    if #available(iOS 16.0, *) {
+                        scene?.effectiveGeometry.interfaceOrientation
+                    } else {
+                        scene?.interfaceOrientation
+                    }
+                let isLandscape = orientation?.isLandscape ?? false
+                let key = isLandscape ? "Appearance.customLandscapeRows" : "Appearance.customPortraitRows"
+                itemsPerRow = UserDefaults.standard.integer(forKey: key)
+        }
+
+        let spacing: CGFloat = 12
+        return Array(repeating: GridItem(.flexible(), spacing: spacing), count: itemsPerRow)
     }
 }
 
@@ -325,8 +362,11 @@ extension MangaView {
         let downloadStatus = viewModel.downloadStatus[chapter.key, default: .none]
         let downloaded = downloadStatus == .finished
         let locked = chapter.locked && !downloaded
-        let opacity: Double = if #available(iOS 17.0, *), locked {
+        let read = viewModel.readingHistory[chapter.key]?.page == -1
+        let opacity: Double = if locked {
             0.5
+        } else if read {
+            0.4
         } else {
             1
         }
@@ -335,7 +375,7 @@ extension MangaView {
             source: viewModel.source,
             sourceKey: viewModel.manga.sourceKey,
             chapter: chapter,
-            read: viewModel.readingHistory[chapter.key]?.page == -1,
+            read: read,
             page: viewModel.readingHistory[chapter.key]?.page,
             downloadStatus: downloadStatus,
             downloadProgress: viewModel.downloadProgress[chapter.key],
@@ -796,57 +836,58 @@ private struct ChapterCellView<T: View>: View, Equatable {
 
     var body: some View {
         let title = chapter.formattedTitle(forceMode: displayMode)
-        let view = ZStack(alignment: .bottomLeading) {
-            Rectangle()
-                .fill(Color(uiColor: .secondarySystemFill))
-                .aspectRatio(2/3, contentMode: .fill)
-            
-            if let thumbnail = chapter.thumbnail {
-                SourceImageView(
-                    source: source,
-                    imageUrl: thumbnail,
-                    downsampleWidth: 400
-                )
-            }
-            
-            LinearGradient(
-                gradient: Gradient(
-                    colors: (0...24).map { offset -> Color in
-                        let ratio = CGFloat(offset) / 24
-                        return Color.black.opacity(0.7 * pow(ratio, CGFloat(3)))
-                    }
-                ),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            
-            Text(title)
-                .foregroundStyle(.white)
-                .font(.system(size: 15, weight: .medium))
-                .multilineTextAlignment(.leading)
-                .lineLimit(2)
-                .padding(8)
-
-            VStack {
-                HStack {
-                    Spacer()
-                    if locked {
-                        Image(systemName: "lock.fill").imageScale(.small).padding(6).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
-                    } else if downloadStatus == .finished {
-                        Image(systemName: "arrow.down.circle.fill").imageScale(.small).padding(6).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
-                    } else if read {
-                        Image(systemName: "checkmark.circle.fill").imageScale(.small).padding(6).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
-                    }
+        let view = Rectangle()
+            .fill(Color(uiColor: .secondarySystemFill))
+            .aspectRatio(2/3, contentMode: .fill)
+            .background {
+                if let thumbnail = chapter.thumbnail {
+                    SourceImageView(
+                        source: source,
+                        imageUrl: thumbnail,
+                        downsampleWidth: 400
+                    )
                 }
-                Spacer()
             }
-        }
-        .contentShape(RoundedRectangle(cornerRadius: 5))
-        .clipShape(RoundedRectangle(cornerRadius: 5))
-        .overlay(
-            RoundedRectangle(cornerRadius: 5)
-                .strokeBorder(Color(UIColor.quaternarySystemFill), lineWidth: 1)
-        )
+            .overlay(
+                LinearGradient(
+                    gradient: Gradient(
+                        colors: (0...24).map { offset -> Color in
+                            let ratio = CGFloat(offset) / 24
+                            return Color.black.opacity(0.7 * pow(ratio, CGFloat(3)))
+                        }
+                    ),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .overlay(
+                Text(title)
+                    .foregroundStyle(.white)
+                    .font(.system(size: 15, weight: .medium))
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(2)
+                    .padding(8),
+                alignment: .bottomLeading
+            )
+            .overlay(
+                VStack {
+                    HStack {
+                        Spacer()
+                        if locked {
+                            Image(systemName: "lock.fill").imageScale(.small).padding(6).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
+                        } else if downloadStatus == .finished {
+                            Image(systemName: "arrow.down.circle.fill").imageScale(.small).padding(6).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
+                        }
+                    }
+                    Spacer()
+                }
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 5))
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+            .overlay(
+                RoundedRectangle(cornerRadius: 5)
+                    .strokeBorder(Color(UIColor.quaternarySystemFill), lineWidth: 1)
+            )
 
         let finalView = ZStack {
             view
