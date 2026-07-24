@@ -882,21 +882,23 @@ private struct ChapterCellView<T: View>: View, Equatable {
             .overlay(
                 VStack {
                     HStack(alignment: .top) {
+                        if locked {
+                            Image(systemName: "lock.fill").font(.system(size: 11, weight: .bold)).padding(4).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
+                        } else if downloadStatus == .finished {
+                            Image(systemName: "arrow.down.circle.fill").font(.system(size: 11, weight: .bold)).padding(4).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
+                        }
+                        
                         Spacer()
+                        
                         if let p = page, p > 0, !read {
                             Text("\(p)")
-                                .font(.system(size: 9, weight: .bold))
+                                .font(.system(size: 11, weight: .bold))
                                 .foregroundStyle(.white)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
                                 .background(Color.black.opacity(0.6))
                                 .clipShape(Capsule())
                                 .padding(4)
-                        }
-                        if locked {
-                            Image(systemName: "lock.fill").imageScale(.small).padding(6).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
-                        } else if downloadStatus == .finished {
-                            Image(systemName: "arrow.down.circle.fill").imageScale(.small).padding(6).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
                         }
                     }
                     Spacer()
