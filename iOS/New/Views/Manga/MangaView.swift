@@ -883,9 +883,9 @@ private struct ChapterCellView<T: View>: View, Equatable {
                 VStack {
                     HStack(alignment: .top) {
                         if locked {
-                            Image(systemName: "lock.fill").font(.system(size: 10.5, weight: .bold)).padding(3).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
+                            Image(systemName: "lock.fill").font(.system(size: 10, weight: .bold)).padding(4).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
                         } else if downloadStatus == .finished {
-                            Image(systemName: "arrow.down.circle.fill").font(.system(size: 10.5, weight: .bold)).padding(3).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
+                            Image(systemName: "arrow.down.circle.fill").font(.system(size: 10, weight: .bold)).padding(4).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
                         }
                         
                         Spacer()
