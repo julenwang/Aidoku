@@ -842,18 +842,19 @@ private struct ChapterCellView<T: View>: View, Equatable {
             return chapter.formattedTitle(forceMode: displayMode)
         }()
         
-        let view = Rectangle()
-            .fill(Color(uiColor: .secondarySystemFill))
-            .aspectRatio(2/3, contentMode: .fill)
-            .background {
-                if let thumbnail = chapter.thumbnail {
-                    SourceImageView(
-                        source: source,
-                        imageUrl: thumbnail,
-                        downsampleWidth: 400
-                    )
-                }
+        let view = Group {
+            if let thumbnail = chapter.thumbnail {
+                SourceImageView(
+                    source: source,
+                    imageUrl: thumbnail,
+                    downsampleWidth: 400
+                )
+            } else {
+                Rectangle()
+                    .fill(Color(uiColor: .secondarySystemFill))
             }
+        }
+        .aspectRatio(2/3, contentMode: .fill)
             .overlay(
                 LinearGradient(
                     gradient: Gradient(stops: [

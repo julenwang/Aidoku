@@ -310,7 +310,7 @@ extension MangaView.ViewModel {
             mangaId: manga.key
         )
         chapterSortOption = .init(flags: filters.flags)
-        chapterSortAscending = filters.flags & ChapterFlagMask.sortAscending != 0
+        chapterSortAscending = filters.flags & ChapterFlagMask.sortAscending == 0
         chapterFilters = ChapterFilterOption.parseOptions(flags: filters.flags)
         chapterLangFilter = filters.language
         chapterScanlatorFilter = filters.scanlators ?? []
@@ -840,7 +840,7 @@ extension MangaView.ViewModel {
 
     private func generateChapterFlags() -> Int {
         var flags: Int = 0
-        if chapterSortAscending {
+        if !chapterSortAscending {
             flags |= ChapterFlagMask.sortAscending
         }
         flags |= chapterSortOption.rawValue << 1
