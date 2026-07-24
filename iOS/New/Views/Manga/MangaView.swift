@@ -71,7 +71,7 @@ struct MangaView: View {
                         }
                         .frame(maxWidth: .infinity)
                     } else {
-                        LazyVGrid(columns: gridColumns, spacing: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12) {
+                        LazyVGrid(columns: gridColumns, spacing: 12) {
                             ForEach(viewModel.chapters.indices, id: \.self) { index in
                                 let chapter = viewModel.chapters[index]
                                 viewForChapter(chapter, index: index)
@@ -97,7 +97,7 @@ struct MangaView: View {
                             ListDivider()
                         }
 
-                        LazyVGrid(columns: gridColumns, spacing: UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12) {
+                        LazyVGrid(columns: gridColumns, spacing: 12) {
                             ForEach(viewModel.otherDownloadedChapters.indices, id: \.self) { index in
                                 let chapter = viewModel.otherDownloadedChapters[index]
                                 viewForChapter(chapter, index: index, secondSection: true)
@@ -875,13 +875,24 @@ private struct ChapterCellView<T: View>: View, Equatable {
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
                     .truncationMode(.middle)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(8),
                 alignment: .bottomLeading
             )
             .overlay(
                 VStack {
-                    HStack {
+                    HStack(alignment: .top) {
                         Spacer()
+                        if let p = page, p > 0, !read {
+                            Text("\(p)")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 2)
+                                .background(Color.black.opacity(0.6))
+                                .clipShape(Capsule())
+                                .padding(4)
+                        }
                         if locked {
                             Image(systemName: "lock.fill").imageScale(.small).padding(6).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
                         } else if downloadStatus == .finished {
