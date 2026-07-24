@@ -58,59 +58,61 @@ struct MangaView: View {
 
     var body: some View {
         let list = ScrollViewReader { proxy in
-            List(selection: $selectedChapters) {
-                headerView
+            ScrollView {
+                VStack(spacing: 0) {
+                    headerView
 
-                if let error = viewModel.error {
-                    ErrorView(error: error) {
-                        viewModel.error = nil
-                        await viewModel.fetchData()
-                    }
-                    .frame(maxWidth: .infinity)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                } else {
-                    ForEach(viewModel.chapters.indices, id: \.self) { index in
-                        let chapter = viewModel.chapters[index]
-                        viewForChapter(chapter, index: index)
+                    if let error = viewModel.error {
+                        ErrorView(error: error) {
+                            viewModel.error = nil
+                            await viewModel.fetchData()
+                        }
+                        .frame(maxWidth: .infinity)
+                    } else {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 105), spacing: 12)], spacing: 12) {
+                            ForEach(viewModel.chapters.indices, id: \.self) { index in
+                                let chapter = viewModel.chapters[index]
+                                viewForChapter(chapter, index: index)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 16)
+
+                        // hide the separator if there are no chapters, or all the chapters are filtered and the other section is shown
+                        if !viewModel.chapters.isEmpty || (!(viewModel.manga.chapters?.isEmpty ?? true) && !viewModel.otherDownloadedChapters.isEmpty) {
+                            bottomSeparator
+                        }
                     }
 
-                    // hide the separator if there are no chapters, or all the chapters are filtered and the other section is shown
-                    if !viewModel.chapters.isEmpty || (!(viewModel.manga.chapters?.isEmpty ?? true) && !viewModel.otherDownloadedChapters.isEmpty) {
+                    if !viewModel.otherDownloadedChapters.isEmpty {
+                        VStack {
+                            HStack {
+                                Text(NSLocalizedString("DOWNLOADED_CHAPTERS"))
+                                    .font(.headline)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
+                            ListDivider()
+                        }
+
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 105), spacing: 12)], spacing: 12) {
+                            ForEach(viewModel.otherDownloadedChapters.indices, id: \.self) { index in
+                                let chapter = viewModel.otherDownloadedChapters[index]
+                                viewForChapter(chapter, index: index, secondSection: true)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 16)
+
                         bottomSeparator
                     }
                 }
-
-                if !viewModel.otherDownloadedChapters.isEmpty {
-                    VStack {
-                        HStack {
-                            Text(NSLocalizedString("DOWNLOADED_CHAPTERS"))
-                                .font(.headline)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 20)
-                        ListDivider()
-                    }
-                    .listRowInsets(.zero)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-
-                    ForEach(viewModel.otherDownloadedChapters.indices, id: \.self) { index in
-                        let chapter = viewModel.otherDownloadedChapters[index]
-                        viewForChapter(chapter, index: index, secondSection: true)
-                    }
-
-                    bottomSeparator
-                }
             }
-            // decrease the min row height for the bottom separator/spacing
-            .environment(\.defaultMinListRowHeight, 10)
             .transition(.opacity)
-            .listStyle(.plain)
             .refreshable {
                 await viewModel.refresh()
             }
-            .introspect(.list, on: .iOS(.v18, .v26, .v27)) { list in
+            .introspect(.scrollView, on: .iOS(.v18, .v26, .v27)) { list in
                 refreshController.list = list
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -305,22 +307,16 @@ extension MangaView {
             .environmentObject(path)
             .frame(minHeight: 0, maxHeight: .infinity, alignment: .topLeading)
         }
-        .listRowInsets(.zero)
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
     }
 
     var bottomSeparator: some View {
         VStack {
-            ListDivider() // final, full width separator
             Color.clear.frame(height: 28) // padding for bottom of list
         }
         .padding(.top, {
             // add a little spacing above on ios 15, since the separator ends up hidden
             if #available(iOS 16.0, *) { 0 } else { 0.5 }
         }())
-        .listRowSeparator(.hidden)
-        .listRowInsets(.zero)
     }
 
     @ViewBuilder
@@ -344,7 +340,8 @@ extension MangaView {
             downloadStatus: downloadStatus,
             downloadProgress: viewModel.downloadProgress[chapter.key],
             displayMode: viewModel.chapterTitleDisplayMode,
-            isEditing: editMode == .active
+            isEditing: editMode == .active,
+            isSelected: selectedChapters.contains(chapter.key)
         ) {
             if editMode == .inactive {
                 openChapter = chapter
@@ -367,7 +364,6 @@ extension MangaView {
         // use equatableview to determine when to refresh the view
         // improves the scrolling performance of the list
         .equatable()
-        .listRowInsets(.zero)
         .disabled(locked)
         .opacity(opacity)
         .id(chapter.key)
@@ -789,6 +785,7 @@ private struct ChapterCellView<T: View>: View, Equatable {
     let downloadProgress: Float?
     let displayMode: ChapterTitleDisplayMode
     let isEditing: Bool
+    let isSelected: Bool
 
     var onPressed: (() -> Void)?
     var contextMenu: (() -> T)?
@@ -798,31 +795,78 @@ private struct ChapterCellView<T: View>: View, Equatable {
     }
 
     var body: some View {
-        let view = HStack {
-            ChapterTableCell(
-                source: source,
-                sourceKey: sourceKey,
-                chapter: chapter,
-                read: read,
-                page: page,
-                downloadStatus: downloadStatus,
-                downloadProgress: downloadProgress,
-                displayMode: displayMode
-            )
-        }
-        if isEditing {
-            view
-        } else {
-            Button {
-                onPressed?()
-            } label: {
-                view
+        let title = chapter.formattedTitle(forceMode: displayMode)
+        let view = ZStack(alignment: .bottomLeading) {
+            Rectangle()
+                .fill(Color(uiColor: .secondarySystemFill))
+                .aspectRatio(2/3, contentMode: .fill)
+            
+            if let thumbnail = chapter.thumbnail {
+                SourceImageView(
+                    source: source,
+                    imageUrl: thumbnail,
+                    downsampleWidth: 400
+                )
             }
-            .tint(.primary)
-            .contextMenu {
-                if !locked {
-                    contextMenu?()
+            
+            LinearGradient(
+                gradient: Gradient(
+                    colors: (0...24).map { offset -> Color in
+                        let ratio = CGFloat(offset) / 24
+                        return Color.black.opacity(0.7 * pow(ratio, CGFloat(3)))
+                    }
+                ),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            
+            Text(title)
+                .foregroundStyle(.white)
+                .font(.system(size: 15, weight: .medium))
+                .multilineTextAlignment(.leading)
+                .lineLimit(2)
+                .padding(8)
+
+            VStack {
+                HStack {
+                    Spacer()
+                    if locked {
+                        Image(systemName: "lock.fill").imageScale(.small).padding(6).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
+                    } else if downloadStatus == .finished {
+                        Image(systemName: "arrow.down.circle.fill").imageScale(.small).padding(6).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
+                    } else if read {
+                        Image(systemName: "checkmark.circle.fill").imageScale(.small).padding(6).background(Color.black.opacity(0.6)).clipShape(Circle()).padding(4).foregroundStyle(.white)
+                    }
                 }
+                Spacer()
+            }
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 5))
+        .clipShape(RoundedRectangle(cornerRadius: 5))
+        .overlay(
+            RoundedRectangle(cornerRadius: 5)
+                .strokeBorder(Color(UIColor.quaternarySystemFill), lineWidth: 1)
+        )
+
+        let finalView = ZStack {
+            view
+            if isEditing {
+                Color.black.opacity(0.4).clipShape(RoundedRectangle(cornerRadius: 5))
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 24))
+                    .foregroundStyle(isSelected ? Color.accentColor : .white)
+            }
+        }
+
+        Button {
+            onPressed?()
+        } label: {
+            finalView
+        }
+        .tint(.primary)
+        .contextMenu {
+            if !locked {
+                contextMenu?()
             }
         }
     }
@@ -835,6 +879,7 @@ private struct ChapterCellView<T: View>: View, Equatable {
             && lhs.downloadProgress == rhs.downloadProgress
             && lhs.displayMode == rhs.displayMode
             && lhs.isEditing == rhs.isEditing
+            && lhs.isSelected == rhs.isSelected
     }
 }
 
