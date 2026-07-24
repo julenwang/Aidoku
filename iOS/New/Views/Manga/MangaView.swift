@@ -835,7 +835,13 @@ private struct ChapterCellView<T: View>: View, Equatable {
     }
 
     var body: some View {
-        let title = chapter.formattedTitle(forceMode: displayMode)
+        let title = {
+            if let t = chapter.title, !t.isEmpty {
+                return t
+            }
+            return chapter.formattedTitle(forceMode: displayMode)
+        }()
+        
         let view = Rectangle()
             .fill(Color(uiColor: .secondarySystemFill))
             .aspectRatio(2/3, contentMode: .fill)
@@ -850,12 +856,10 @@ private struct ChapterCellView<T: View>: View, Equatable {
             }
             .overlay(
                 LinearGradient(
-                    gradient: Gradient(
-                        colors: (0...24).map { offset -> Color in
-                            let ratio = CGFloat(offset) / 24
-                            return Color.black.opacity(0.7 * pow(ratio, CGFloat(3)))
-                        }
-                    ),
+                    gradient: Gradient(stops: [
+                        .init(color: .clear, location: 0.7),
+                        .init(color: Color.black.opacity(0.7), location: 1.0)
+                    ]),
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -866,6 +870,7 @@ private struct ChapterCellView<T: View>: View, Equatable {
                     .font(.system(size: 15, weight: .medium))
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
+                    .truncationMode(.middle)
                     .padding(8),
                 alignment: .bottomLeading
             )

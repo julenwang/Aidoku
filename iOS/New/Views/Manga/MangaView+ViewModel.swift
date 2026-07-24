@@ -33,7 +33,7 @@ extension MangaView {
         @Published var chapterSortOption: ChapterSortOption = .sourceOrder {
             didSet { resortChapters() }
         }
-        @Published var chapterSortAscending = false {
+        @Published var chapterSortAscending = true {
             didSet { resortChapters() }
         }
 
