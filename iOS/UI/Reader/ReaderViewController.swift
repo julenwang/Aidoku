@@ -58,6 +58,15 @@ class ReaderViewController: BaseObservingViewController {
     private let doubleSqueezeInterval: TimeInterval = 0.3
     private let longSqueezeThreshold: TimeInterval = 0.5
 
+    private lazy var pageOffsetButton: UIBarButtonItem = {
+        UIBarButtonItem(
+            image: UIImage(systemName: "rectangle.split.2x1"),
+            style: .plain,
+            target: self,
+            action: #selector(togglePageOffset)
+        )
+    }()
+
     private lazy var descriptionButtonController: UIHostingController<ReaderPageDescriptionButtonView> = {
         let buttonView = ReaderPageDescriptionButtonView(source: source, pages: [])
         let hostingController = UIHostingController(rootView: buttonView)
@@ -128,7 +137,8 @@ class ReaderViewController: BaseObservingViewController {
         node.backgroundColor = .systemBackground
         navigationController?.navigationBar.prefersLargeTitles = false
 
-        // navbar buttons
+        updatePageOffsetButtonState()
+
         navigationItem.leftBarButtonItems = [
             UIBarButtonItem(
                 barButtonSystemItem: .close,
@@ -140,7 +150,8 @@ class ReaderViewController: BaseObservingViewController {
                 style: .plain,
                 target: self,
                 action: #selector(openChapterList)
-            )
+            ),
+            pageOffsetButton
         ]
         let moreButton = UIBarButtonItem(
             image: UIImage(systemName: "safari"),
@@ -214,6 +225,10 @@ class ReaderViewController: BaseObservingViewController {
         pageOffsetGesture.numberOfTouchesRequired = 2
         pageOffsetGesture.numberOfTapsRequired = 2
         view.addGestureRecognizer(pageOffsetGesture)
+
+        addObserver(forName: "Reader.pagedPageOffset.\(manga.identifier)") { [weak self] _ in
+            self?.updatePageOffsetButtonState()
+        }
 
         // set reader
         let readingModeKey = "Reader.readingMode.\(manga.identifier)"
@@ -536,6 +551,35 @@ class ReaderViewController: BaseObservingViewController {
         }
         let vc = UIHostingController(rootView: view)
         present(vc, animated: true)
+    }
+
+    @objc private func togglePageOffset() {
+        let key = "Reader.pagedPageOffset.\(manga.identifier)"
+        
+        let currentState: Bool
+        if let value = UserDefaults.standard.object(forKey: key) as? Bool {
+            currentState = value
+        } else {
+            currentState = UserDefaults.standard.bool(forKey: "Reader.pagedPageOffset")
+        }
+        
+        UserDefaults.standard.set(!currentState, forKey: key)
+        NotificationCenter.default.post(name: NSNotification.Name(key), object: nil)
+        
+        updatePageOffsetButtonState()
+    }
+
+    private func updatePageOffsetButtonState() {
+        let key = "Reader.pagedPageOffset.\(manga.identifier)"
+        let currentState: Bool
+        if let value = UserDefaults.standard.object(forKey: key) as? Bool {
+            currentState = value
+        } else {
+            currentState = UserDefaults.standard.bool(forKey: "Reader.pagedPageOffset")
+        }
+        
+        pageOffsetButton.image = UIImage(systemName: "rectangle.split.2x1")
+        pageOffsetButton.tintColor = currentState ? .systemBlue : nil
     }
 
     @objc func close() {
