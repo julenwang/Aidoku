@@ -47,8 +47,6 @@ class ReaderViewController: BaseObservingViewController {
     private var sessionLastInteraction: Date?
 
     weak var reader: ReaderReaderDelegate?
-    var onDismiss: (() -> Void)?
-    var onDismissHorizontal: (() -> Void)?
 
     private lazy var activityIndicator = UIActivityIndicatorView(style: .medium)
     private lazy var toolbarView = ReaderToolbarView()
@@ -662,11 +660,7 @@ class ReaderViewController: BaseObservingViewController {
         dismissPanGesture.isEnabled = false
         webtoonEdgeDismissGesture.isEnabled = false
         webtoonSwipeDismissGesture.isEnabled = false
-        if let onDismiss {
-            onDismiss()
-        } else {
-            dismiss(animated: true)
-        }
+        dismiss(animated: true)
     }
 
     @objc func closeHorizontal() {
@@ -686,13 +680,7 @@ class ReaderViewController: BaseObservingViewController {
         transition.subtype = .fromLeft
         targetWindow?.layer.add(transition, forKey: kCATransition)
 
-        if let onDismissHorizontal {
-            onDismissHorizontal()
-        } else if let onDismiss {
-            onDismiss()
-        } else {
-            dismiss(animated: false)
-        }
+        dismiss(animated: false)
     }
 
     @objc func sliderMoved(_ sender: ReaderSliderView) {

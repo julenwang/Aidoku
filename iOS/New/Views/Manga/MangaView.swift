@@ -243,17 +243,7 @@ struct MangaView: View {
                         }
                         return mangaWithFilteredChapters
                     }(),
-                    chapter: chapter,
-                    onDismiss: {
-                        openChapter = nil
-                    },
-                    onDismissHorizontal: {
-                        var transaction = Transaction()
-                        transaction.disablesAnimations = true
-                        withTransaction(transaction) {
-                            openChapter = nil
-                        }
-                    }
+                    chapter: chapter
                 )
                 .ignoresSafeArea()
             }
