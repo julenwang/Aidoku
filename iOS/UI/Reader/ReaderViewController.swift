@@ -416,14 +416,6 @@ class ReaderViewController: BaseObservingViewController {
                 chaptersToRemoveDownload = []
             }
         }
-
-        guard currentPage >= 1 else { return }
-        Task {
-            // Delay reading position sync slightly so Core Data writes and .historySet
-            // do not trigger SwiftUI UI re-render on the presenting view during modal dismissal
-            try? await Task.sleep(nanoseconds: 220_000_000)
-            await updateReadPosition()
-        }
     }
 
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
@@ -661,6 +653,12 @@ class ReaderViewController: BaseObservingViewController {
         webtoonEdgeDismissGesture.isEnabled = false
         webtoonSwipeDismissGesture.isEnabled = false
 
+        if currentPage >= 1 {
+            Task { [weak self] in
+                await self?.updateReadPosition()
+            }
+        }
+
         guard let targetView = navigationController?.view ?? view else {
             dismiss(animated: false)
             return
@@ -670,7 +668,7 @@ class ReaderViewController: BaseObservingViewController {
         UIView.animate(
             withDuration: 0.2,
             delay: 0,
-            options: [.curveEaseIn]
+            options: [.curveEaseOut]
         ) {
             targetView.transform = CGAffineTransform(translationX: 0, y: screenHeight)
         } completion: { [weak self] _ in
@@ -685,6 +683,12 @@ class ReaderViewController: BaseObservingViewController {
         dismissPanGesture.isEnabled = false
         webtoonEdgeDismissGesture.isEnabled = false
         webtoonSwipeDismissGesture.isEnabled = false
+
+        if currentPage >= 1 {
+            Task { [weak self] in
+                await self?.updateReadPosition()
+            }
+        }
 
         guard let targetView = navigationController?.view ?? view else {
             dismiss(animated: false)
