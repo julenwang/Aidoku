@@ -15,8 +15,6 @@ struct DownloadedMangaView: View {
 
     @State private var openChapter: DownloadedChapterInfo?
 
-    @Namespace private var transitionNamespace
-
     init(manga: DownloadedMangaInfo) {
         self._viewModel = StateObject(wrappedValue: .init(manga: manga))
     }
@@ -87,7 +85,6 @@ struct DownloadedMangaView: View {
                 chapter: chapter.toChapter()
             )
             .ignoresSafeArea()
-            .navigationTransitionZoom(sourceID: chapter, in: transitionNamespace)
         }
     }
 
@@ -121,7 +118,6 @@ struct DownloadedMangaView: View {
                             Label(NSLocalizedString("SHARE"), systemImage: "square.and.arrow.up")
                         }
                     }
-                    .matchedTransitionSourcePlease(id: chapter, in: transitionNamespace)
                 }
                 .onDelete(perform: delete)
             } header: {

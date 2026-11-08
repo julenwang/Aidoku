@@ -191,23 +191,6 @@ extension OldMangaCollectionViewController {
 
     func openInfoView(info: MangaInfo, zoom: Bool = true) {
         let viewController = MangaViewController(manga: info, parent: self)
-        if zoom, #available(iOS 18.0, *) {
-            viewController.preferredTransition = .zoom { context in
-                guard
-                    let detailViewController = context.zoomedViewController as? MangaViewController,
-                    let info = detailViewController.mangaInfo,
-                    let indexPath = self.dataSource.indexPath(for: info),
-                    let cell = self.collectionView.cellForItem(at: indexPath)
-                else {
-                    return nil
-                }
-                if let cell = cell as? MangaListCell {
-                    return cell.coverImageView
-                } else {
-                    return cell.contentView
-                }
-            }
-        }
         navigationController?.pushViewController(viewController, animated: true)
     }
 

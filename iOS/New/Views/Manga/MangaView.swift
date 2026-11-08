@@ -36,8 +36,6 @@ struct MangaView: View {
 
     private var path: NavigationCoordinator
 
-    @Namespace private var transitionNamespace
-
     enum OpenAction: String {
         case read
         case readNext
@@ -248,7 +246,6 @@ struct MangaView: View {
                     chapter: chapter
                 )
                 .ignoresSafeArea()
-                .navigationTransitionZoom(sourceID: chapter, in: transitionNamespace)
             }
             .environment(\.editMode, $editMode)
             .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
@@ -408,7 +405,6 @@ extension MangaView {
         .opacity(opacity)
         .id(chapter.key)
         .tag(chapter.key, selectable: !locked)
-        .matchedTransitionSourcePlease(id: chapter, in: transitionNamespace)
     }
 
     @ViewBuilder
