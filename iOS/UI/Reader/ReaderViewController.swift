@@ -373,6 +373,12 @@ class ReaderViewController: BaseObservingViewController {
         }
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        view.isUserInteractionEnabled = true
+        navigationController?.view.isUserInteractionEnabled = true
+    }
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
@@ -394,6 +400,14 @@ class ReaderViewController: BaseObservingViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
 
+        view.isUserInteractionEnabled = false
+        navigationController?.view.isUserInteractionEnabled = false
+
+        dismissSwipeGesture.isEnabled = false
+        dismissPanGesture.isEnabled = false
+        webtoonEdgeDismissGesture.isEnabled = false
+        webtoonSwipeDismissGesture.isEnabled = false
+
         if !chaptersToRemoveDownload.isEmpty {
             Task {
                 await DownloadManager.shared.delete(chapters: chaptersToRemoveDownload.map {
@@ -405,6 +419,9 @@ class ReaderViewController: BaseObservingViewController {
 
         guard currentPage >= 1 else { return }
         Task {
+            // Delay reading position sync slightly so Core Data writes and .historySet
+            // do not trigger SwiftUI UI re-render on the presenting view during modal dismissal
+            try? await Task.sleep(nanoseconds: 350_000_000)
             await updateReadPosition()
         }
     }
@@ -637,6 +654,12 @@ class ReaderViewController: BaseObservingViewController {
     }
 
     @objc func close() {
+        view.isUserInteractionEnabled = false
+        navigationController?.view.isUserInteractionEnabled = false
+        dismissSwipeGesture.isEnabled = false
+        dismissPanGesture.isEnabled = false
+        webtoonEdgeDismissGesture.isEnabled = false
+        webtoonSwipeDismissGesture.isEnabled = false
         dismiss(animated: true)
     }
 
