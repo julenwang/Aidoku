@@ -13,8 +13,6 @@ struct DownloadedMangaView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var path: NavigationCoordinator
 
-    @State private var openChapter: DownloadedChapterInfo?
-
     init(manga: DownloadedMangaInfo) {
         self._viewModel = StateObject(wrappedValue: .init(manga: manga))
     }
@@ -78,14 +76,6 @@ struct DownloadedMangaView: View {
         } message: {
             Text(NSLocalizedString("REMOVE_ALL_DOWNLOADS_CONFIRM"))
         }
-        .fullScreenCover(item: $openChapter) { chapter in
-            SwiftUIReaderNavigationController(
-                source: SourceManager.shared.source(for: viewModel.manga.sourceId),
-                manga: viewModel.manga.toManga(),
-                chapter: chapter.toChapter()
-            )
-            .ignoresSafeArea()
-        }
     }
 
     private var emptyStateView: some View {
@@ -106,7 +96,7 @@ struct DownloadedMangaView: View {
             Section {
                 ForEach(viewModel.chapters) { chapter in
                     Button {
-                        openChapter = chapter
+                        openReaderView(chapter: chapter)
                     } label: {
                         ChapterRow(chapter: chapter, history: viewModel.readingHistory[chapter.chapterId])
                     }
@@ -200,6 +190,17 @@ struct DownloadedMangaView: View {
             parent: path.rootViewController
         )
         path.push(viewController)
+    }
+
+    private func openReaderView(chapter: DownloadedChapterInfo) {
+        let readerController = ReaderViewController(
+            source: SourceManager.shared.source(for: viewModel.manga.sourceId),
+            manga: viewModel.manga.toManga(),
+            chapter: chapter.toChapter()
+        )
+        let navigationController = ReaderNavigationController(readerViewController: readerController)
+        navigationController.modalPresentationStyle = .fullScreen
+        path.present(navigationController)
     }
 
     private func showShareSheet(chapter: DownloadedChapterInfo) {

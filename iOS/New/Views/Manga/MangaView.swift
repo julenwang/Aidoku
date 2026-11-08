@@ -30,8 +30,6 @@ struct MangaView: View {
 
     @State private var loadingAlert: UIAlertController?
 
-    @State private var openChapter: AidokuRunner.Chapter?
-
     @StateObject private var refreshController = RefreshController()
 
     private var path: NavigationCoordinator
@@ -182,15 +180,15 @@ struct MangaView: View {
                     switch openAction {
                         case .read:
                             if let targetChapterKey, let chapter = viewModel.chapters.first(where: { $0.key == targetChapterKey }) {
-                                openChapter = chapter
+                                openReaderView(chapter: chapter)
                             }
                         case .readNext:
                             if let nextChapter = viewModel.nextChapter {
-                                openChapter = nextChapter
+                                openReaderView(chapter: nextChapter)
                             }
                         case .readLatest:
                             if let latestChapter = viewModel.chapters.first {
-                                openChapter = latestChapter
+                                openReaderView(chapter: latestChapter)
                             }
                     }
                 } else if let targetChapterKey {
@@ -230,22 +228,6 @@ struct MangaView: View {
                         navigationController.isToolbarHidden = true
                     }
                 }
-            }
-            .fullScreenCover(item: $openChapter) { chapter in
-                SwiftUIReaderNavigationController(
-                    source: viewModel.source,
-                    manga: {
-                        var mangaWithFilteredChapters = viewModel.manga
-                        mangaWithFilteredChapters.chapters = if viewModel.chapterSortAscending {
-                            viewModel.chapters.reversed()
-                        } else {
-                            viewModel.chapters
-                        }
-                        return mangaWithFilteredChapters
-                    }(),
-                    chapter: chapter
-                )
-                .ignoresSafeArea()
             }
             .environment(\.editMode, $editMode)
             .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
@@ -334,7 +316,7 @@ extension MangaView {
                 },
                 onReadButtonPressed: {
                     if let nextChapter = viewModel.nextChapter {
-                        openChapter = nextChapter
+                        openReaderView(chapter: nextChapter)
                     }
                 }
             )
@@ -381,7 +363,7 @@ extension MangaView {
             isSelected: selectedChapters.contains(chapter.key)
         ) {
             if editMode == .inactive {
-                openChapter = chapter
+                openReaderView(chapter: chapter)
             } else {
                 if selectedChapters.contains(chapter.key) {
                     selectedChapters.remove(chapter.key)
@@ -808,6 +790,23 @@ extension MangaView {
         Task {
             await (UIApplication.shared.delegate as? AppDelegate)?.hideLoadingIndicator()
         }
+    }
+
+    func openReaderView(chapter: AidokuRunner.Chapter) {
+        var mangaWithFilteredChapters = viewModel.manga
+        mangaWithFilteredChapters.chapters = if viewModel.chapterSortAscending {
+            viewModel.chapters.reversed()
+        } else {
+            viewModel.chapters
+        }
+        let readerController = ReaderViewController(
+            source: viewModel.source,
+            manga: mangaWithFilteredChapters,
+            chapter: chapter
+        )
+        let navigationController = ReaderNavigationController(readerViewController: readerController)
+        navigationController.modalPresentationStyle = .fullScreen
+        path.present(navigationController)
     }
 }
 
