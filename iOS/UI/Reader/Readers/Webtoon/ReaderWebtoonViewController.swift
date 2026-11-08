@@ -48,6 +48,10 @@ class ReaderWebtoonViewController: ZoomableCollectionViewController {
     // Stores the last calculated page number
     private var previousPage = 0
 
+    var isZoomed: Bool {
+        zoomView.scrollNode.view.zoomScale > 1.01
+    }
+
     init(source: AidokuRunner.Source?, manga: AidokuRunner.Manga) {
         self.viewModel = ReaderWebtoonViewModel(source: source, manga: manga)
         super.init(layout: VerticalContentOffsetPreservingLayout())

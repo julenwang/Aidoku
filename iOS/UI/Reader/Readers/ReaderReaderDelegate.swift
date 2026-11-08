@@ -13,6 +13,7 @@ import AidokuRunner
 protocol ReaderReaderDelegate: UIViewController {
     var readingMode: ReadingMode { get set }
     var delegate: ReaderHoldingDelegate? { get set }
+    var isZoomed: Bool { get }
 
     func moveLeft()
     func moveRight()
@@ -24,6 +25,7 @@ protocol ReaderReaderDelegate: UIViewController {
 }
 
 extension ReaderReaderDelegate {
+    var isZoomed: Bool { false }
     func toggleOffset() {
         // do nothing by default
     }

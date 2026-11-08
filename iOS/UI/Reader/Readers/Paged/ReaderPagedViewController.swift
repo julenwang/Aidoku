@@ -56,6 +56,17 @@ class ReaderPagedViewController: BaseObservingViewController {
     private var previousChapter: AidokuRunner.Chapter?
     private var nextChapter: AidokuRunner.Chapter?
 
+    var isZoomed: Bool {
+        if let current = pageViewController.viewControllers?.first {
+            if let pageController = current as? ReaderPageViewController {
+                return (pageController.zoomView?.zoomScale ?? 1) > 1.01
+            } else if let doublePageController = current as? ReaderDoublePageViewController {
+                return doublePageController.zoomView.zoomScale > 1.01
+            }
+        }
+        return false
+    }
+
     private lazy var pageViewController = makePageViewController()
 
     func makePageViewController() -> UIPageViewController {
