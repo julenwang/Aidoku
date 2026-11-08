@@ -48,6 +48,7 @@ class ReaderViewController: BaseObservingViewController {
 
     weak var reader: ReaderReaderDelegate?
     var onDismiss: (() -> Void)?
+    var onDismissHorizontal: (() -> Void)?
 
     private lazy var activityIndicator = UIActivityIndicatorView(style: .medium)
     private lazy var toolbarView = ReaderToolbarView()
@@ -132,7 +133,7 @@ class ReaderViewController: BaseObservingViewController {
     }()
 
     private lazy var webtoonSwipeDismissGesture: UISwipeGestureRecognizer = {
-        let swipe = UISwipeGestureRecognizer(target: self, action: #selector(close))
+        let swipe = UISwipeGestureRecognizer(target: self, action: #selector(closeHorizontal))
         swipe.direction = .right
         swipe.delegate = self
         return swipe
@@ -143,7 +144,7 @@ class ReaderViewController: BaseObservingViewController {
         let translation = gesture.translation(in: view)
         let velocity = gesture.velocity(in: view)
         if translation.x > 40 || velocity.x > 200 {
-            close()
+            closeHorizontal()
         }
     }
 
@@ -665,6 +666,32 @@ class ReaderViewController: BaseObservingViewController {
             onDismiss()
         } else {
             dismiss(animated: true)
+        }
+    }
+
+    @objc func closeHorizontal() {
+        view.isUserInteractionEnabled = false
+        navigationController?.view.isUserInteractionEnabled = false
+        dismissSwipeGesture.isEnabled = false
+        dismissPanGesture.isEnabled = false
+        webtoonEdgeDismissGesture.isEnabled = false
+        webtoonSwipeDismissGesture.isEnabled = false
+
+        let targetWindow = view.window ?? navigationController?.view.window
+
+        let transition = CATransition()
+        transition.duration = 0.28
+        transition.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        transition.type = .push
+        transition.subtype = .fromLeft
+        targetWindow?.layer.add(transition, forKey: kCATransition)
+
+        if let onDismissHorizontal {
+            onDismissHorizontal()
+        } else if let onDismiss {
+            onDismiss()
+        } else {
+            dismiss(animated: false)
         }
     }
 

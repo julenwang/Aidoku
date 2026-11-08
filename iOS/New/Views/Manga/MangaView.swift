@@ -246,6 +246,13 @@ struct MangaView: View {
                     chapter: chapter,
                     onDismiss: {
                         openChapter = nil
+                    },
+                    onDismissHorizontal: {
+                        var transaction = Transaction()
+                        transaction.disablesAnimations = true
+                        withTransaction(transaction) {
+                            openChapter = nil
+                        }
                     }
                 )
                 .ignoresSafeArea()

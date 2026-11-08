@@ -85,6 +85,13 @@ struct DownloadedMangaView: View {
                 chapter: chapter.toChapter(),
                 onDismiss: {
                     openChapter = nil
+                },
+                onDismissHorizontal: {
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        openChapter = nil
+                    }
                 }
             )
             .ignoresSafeArea()
