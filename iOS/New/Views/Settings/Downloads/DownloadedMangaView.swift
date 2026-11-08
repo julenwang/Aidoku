@@ -199,7 +199,7 @@ struct DownloadedMangaView: View {
             chapter: chapter.toChapter()
         )
         let navigationController = ReaderNavigationController(readerViewController: readerController)
-        navigationController.modalPresentationStyle = .fullScreen
+        navigationController.modalPresentationStyle = .overFullScreen
         path.present(navigationController)
     }
 

@@ -421,7 +421,7 @@ class ReaderViewController: BaseObservingViewController {
         Task {
             // Delay reading position sync slightly so Core Data writes and .historySet
             // do not trigger SwiftUI UI re-render on the presenting view during modal dismissal
-            try? await Task.sleep(nanoseconds: 350_000_000)
+            try? await Task.sleep(nanoseconds: 220_000_000)
             await updateReadPosition()
         }
     }
@@ -660,7 +660,22 @@ class ReaderViewController: BaseObservingViewController {
         dismissPanGesture.isEnabled = false
         webtoonEdgeDismissGesture.isEnabled = false
         webtoonSwipeDismissGesture.isEnabled = false
-        dismiss(animated: true)
+
+        guard let targetView = navigationController?.view ?? view else {
+            dismiss(animated: false)
+            return
+        }
+
+        let screenHeight = targetView.window?.bounds.height ?? UIScreen.main.bounds.height
+        UIView.animate(
+            withDuration: 0.2,
+            delay: 0,
+            options: [.curveEaseIn]
+        ) {
+            targetView.transform = CGAffineTransform(translationX: 0, y: screenHeight)
+        } completion: { [weak self] _ in
+            self?.dismiss(animated: false)
+        }
     }
 
     @objc func closeHorizontal() {
@@ -671,16 +686,21 @@ class ReaderViewController: BaseObservingViewController {
         webtoonEdgeDismissGesture.isEnabled = false
         webtoonSwipeDismissGesture.isEnabled = false
 
-        let targetWindow = view.window ?? navigationController?.view.window
+        guard let targetView = navigationController?.view ?? view else {
+            dismiss(animated: false)
+            return
+        }
 
-        let transition = CATransition()
-        transition.duration = 0.28
-        transition.timingFunction = CAMediaTimingFunction(name: .easeOut)
-        transition.type = .push
-        transition.subtype = .fromLeft
-        targetWindow?.layer.add(transition, forKey: kCATransition)
-
-        dismiss(animated: false)
+        let screenWidth = targetView.window?.bounds.width ?? UIScreen.main.bounds.width
+        UIView.animate(
+            withDuration: 0.2,
+            delay: 0,
+            options: [.curveEaseOut]
+        ) {
+            targetView.transform = CGAffineTransform(translationX: screenWidth, y: 0)
+        } completion: { [weak self] _ in
+            self?.dismiss(animated: false)
+        }
     }
 
     @objc func sliderMoved(_ sender: ReaderSliderView) {
