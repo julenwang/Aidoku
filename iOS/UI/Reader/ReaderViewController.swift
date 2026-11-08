@@ -654,8 +654,8 @@ class ReaderViewController: BaseObservingViewController {
         webtoonSwipeDismissGesture.isEnabled = false
 
         if currentPage >= 1 {
-            Task { [weak self] in
-                await self?.updateReadPosition()
+            Task {
+                await self.updateReadPosition()
             }
         }
 
@@ -685,8 +685,8 @@ class ReaderViewController: BaseObservingViewController {
         webtoonSwipeDismissGesture.isEnabled = false
 
         if currentPage >= 1 {
-            Task { [weak self] in
-                await self?.updateReadPosition()
+            Task {
+                await self.updateReadPosition()
             }
         }
 
