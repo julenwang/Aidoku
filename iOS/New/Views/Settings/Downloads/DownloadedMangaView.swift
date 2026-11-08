@@ -82,7 +82,10 @@ struct DownloadedMangaView: View {
             SwiftUIReaderNavigationController(
                 source: SourceManager.shared.source(for: viewModel.manga.sourceId),
                 manga: viewModel.manga.toManga(),
-                chapter: chapter.toChapter()
+                chapter: chapter.toChapter(),
+                onDismiss: {
+                    openChapter = nil
+                }
             )
             .ignoresSafeArea()
         }

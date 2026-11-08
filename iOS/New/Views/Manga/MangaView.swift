@@ -243,7 +243,10 @@ struct MangaView: View {
                         }
                         return mangaWithFilteredChapters
                     }(),
-                    chapter: chapter
+                    chapter: chapter,
+                    onDismiss: {
+                        openChapter = nil
+                    }
                 )
                 .ignoresSafeArea()
             }

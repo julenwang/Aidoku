@@ -41,16 +41,25 @@ class ReaderNavigationController: UINavigationController {
 }
 
 struct SwiftUIReaderNavigationController: View {
+    @Environment(\.dismiss) private var dismiss
+
     let source: AidokuRunner.Source?
     let manga: AidokuRunner.Manga
     let chapter: AidokuRunner.Chapter
+    var onDismiss: (() -> Void)?
 
     @State private var interfaceOrientations: UIInterfaceOrientationMask?
 
-    init(source: AidokuRunner.Source?, manga: AidokuRunner.Manga, chapter: AidokuRunner.Chapter) {
+    init(
+        source: AidokuRunner.Source?,
+        manga: AidokuRunner.Manga,
+        chapter: AidokuRunner.Chapter,
+        onDismiss: (() -> Void)? = nil
+    ) {
         self.source = source
         self.manga = manga
         self.chapter = chapter
+        self.onDismiss = onDismiss
 
         let interfaceOrientations: UIInterfaceOrientationMask
         switch UserDefaults.standard.string(forKey: "Reader.orientation") {
@@ -63,7 +72,12 @@ struct SwiftUIReaderNavigationController: View {
     }
 
     var body: some View {
-        _SwiftUIReaderNavigationController(source: source, manga: manga, chapter: chapter)
+        _SwiftUIReaderNavigationController(
+            source: source,
+            manga: manga,
+            chapter: chapter,
+            onDismiss: onDismiss ?? { dismiss() }
+        )
             .interfaceOrientations(interfaceOrientations)
             .onReceive(NotificationCenter.default.publisher(for: .readerOrientation)) { _ in
                 switch UserDefaults.standard.string(forKey: "Reader.orientation") {
@@ -80,6 +94,7 @@ private struct _SwiftUIReaderNavigationController: UIViewControllerRepresentable
     let source: AidokuRunner.Source?
     let manga: AidokuRunner.Manga
     let chapter: AidokuRunner.Chapter
+    let onDismiss: () -> Void
 
     final class Coordinator {
         var nav: ReaderNavigationController?
@@ -96,6 +111,7 @@ private struct _SwiftUIReaderNavigationController: UIViewControllerRepresentable
             manga: manga,
             chapter: chapter
         )
+        reader.onDismiss = onDismiss
         let nav = ReaderNavigationController(readerViewController: reader)
         context.coordinator.reader = reader
         context.coordinator.nav = nav
@@ -104,6 +120,7 @@ private struct _SwiftUIReaderNavigationController: UIViewControllerRepresentable
 
     func updateUIViewController(_ uiViewController: ReaderNavigationController, context: Context) {
         guard let reader = context.coordinator.reader else { return }
+        reader.onDismiss = onDismiss
 
         // make a fresh reader instance if needed
         if reader.manga.key != manga.key || reader.manga.sourceKey != manga.sourceKey {
@@ -112,6 +129,7 @@ private struct _SwiftUIReaderNavigationController: UIViewControllerRepresentable
                 manga: manga,
                 chapter: chapter
             )
+            newReader.onDismiss = onDismiss
             context.coordinator.reader = newReader
             uiViewController.setViewControllers([newReader], animated: false)
         } else {
