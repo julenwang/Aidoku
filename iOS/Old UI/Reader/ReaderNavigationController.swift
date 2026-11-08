@@ -16,6 +16,8 @@ class ReaderNavigationController: UINavigationController {
         self.readerViewController = readerViewController
         self.mangaInfo = mangaInfo
         super.init(rootViewController: readerViewController)
+        modalPresentationStyle = .overFullScreen
+        modalPresentationCapturesStatusBarAppearance = true
     }
 
     required init?(coder aDecoder: NSCoder) {
