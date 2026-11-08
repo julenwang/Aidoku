@@ -805,7 +805,7 @@ extension MangaView {
             chapter: chapter
         )
         let navigationController = ReaderNavigationController(readerViewController: readerController)
-        navigationController.modalPresentationStyle = .overFullScreen
+        navigationController.modalPresentationStyle = .fullScreen
         path.present(navigationController)
     }
 }
