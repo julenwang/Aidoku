@@ -123,6 +123,29 @@ class ReaderViewController: BaseObservingViewController {
         }
     }
 
+    private lazy var webtoonEdgeDismissGesture: UIScreenEdgePanGestureRecognizer = {
+        let edgePan = UIScreenEdgePanGestureRecognizer(target: self, action: #selector(handleWebtoonEdgeDismiss(_:)))
+        edgePan.edges = .left
+        edgePan.delegate = self
+        return edgePan
+    }()
+
+    private lazy var webtoonSwipeDismissGesture: UISwipeGestureRecognizer = {
+        let swipe = UISwipeGestureRecognizer(target: self, action: #selector(close))
+        swipe.direction = .right
+        swipe.delegate = self
+        return swipe
+    }()
+
+    @objc private func handleWebtoonEdgeDismiss(_ gesture: UIScreenEdgePanGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        let translation = gesture.translation(in: view)
+        let velocity = gesture.velocity(in: view)
+        if translation.x > 40 || velocity.x > 200 {
+            close()
+        }
+    }
+
     var statusBarHidden = false
 
     override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation {
@@ -243,6 +266,8 @@ class ReaderViewController: BaseObservingViewController {
         view.addGestureRecognizer(barToggleTapGesture)
         view.addGestureRecognizer(dismissSwipeGesture)
         view.addGestureRecognizer(dismissPanGesture)
+        view.addGestureRecognizer(webtoonEdgeDismissGesture)
+        view.addGestureRecognizer(webtoonSwipeDismissGesture)
 
         // page offset tap gesture
         let pageOffsetGesture = UITapGestureRecognizer(target: self, action: #selector(toggleOffset))
@@ -401,6 +426,8 @@ class ReaderViewController: BaseObservingViewController {
         let canDismiss = !isVerticalReader || navigationController?.navigationBar.alpha == 1
         dismissSwipeGesture.isEnabled = canDismiss
         dismissPanGesture.isEnabled = canDismiss
+        webtoonEdgeDismissGesture.isEnabled = isVerticalReader
+        webtoonSwipeDismissGesture.isEnabled = isVerticalReader
 
         // the view with the target gesture recognizers changes based on if it was presented from uikit or swiftui
         let gestureRecognizers = (parent?.view.gestureRecognizers ?? []) + (parent?.view.superview?.superview?.gestureRecognizers ?? [])
@@ -1206,6 +1233,13 @@ extension ReaderViewController {
 // MARK: - UIGestureRecognizerDelegate
 extension ReaderViewController: UIGestureRecognizerDelegate {
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        if gestureRecognizer == webtoonEdgeDismissGesture || gestureRecognizer == webtoonSwipeDismissGesture {
+            if reader?.isZoomed == true {
+                return false
+            }
+            let isVerticalReader = reader is ReaderWebtoonViewController || readingMode == .vertical
+            return isVerticalReader
+        }
         if gestureRecognizer == dismissSwipeGesture || gestureRecognizer == dismissPanGesture {
             if reader?.isZoomed == true {
                 return false
