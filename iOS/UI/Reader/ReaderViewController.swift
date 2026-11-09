@@ -147,9 +147,10 @@ class ReaderViewController: BaseObservingViewController {
     }
 
     var statusBarHidden = false
+    private var isDismissing = false
 
     override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation {
-        UIStatusBarAnimation.fade
+        isDismissing ? .none : .fade
     }
     override var prefersStatusBarHidden: Bool {
         statusBarHidden
@@ -375,6 +376,7 @@ class ReaderViewController: BaseObservingViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        isDismissing = false
         view.isUserInteractionEnabled = true
         navigationController?.view.isUserInteractionEnabled = true
     }
@@ -664,6 +666,10 @@ class ReaderViewController: BaseObservingViewController {
             return
         }
 
+        isDismissing = true
+        statusBarHidden = false
+        setNeedsStatusBarAppearanceUpdate()
+
         let screenHeight = targetView.window?.bounds.height ?? UIScreen.main.bounds.height
         UIView.animate(
             withDuration: 0.2,
@@ -694,6 +700,10 @@ class ReaderViewController: BaseObservingViewController {
             dismiss(animated: false)
             return
         }
+
+        isDismissing = true
+        statusBarHidden = false
+        setNeedsStatusBarAppearanceUpdate()
 
         let screenWidth = targetView.window?.bounds.width ?? UIScreen.main.bounds.width
         UIView.animate(

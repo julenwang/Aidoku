@@ -32,6 +32,10 @@ class ReaderNavigationController: UINavigationController {
         topViewController
     }
 
+    override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation {
+        topViewController?.preferredStatusBarUpdateAnimation ?? .none
+    }
+
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
         switch UserDefaults.standard.string(forKey: "Reader.orientation") {
             case "device": .all
