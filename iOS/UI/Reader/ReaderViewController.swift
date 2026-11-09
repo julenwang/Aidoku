@@ -725,7 +725,7 @@ class ReaderViewController: BaseObservingViewController {
 
         let screenHeight = targetView.window?.bounds.height ?? UIScreen.main.bounds.height
         UIView.animate(
-            withDuration: 0.38,
+            withDuration: 0.22,
             delay: 0,
             options: [.curveEaseIn, .allowUserInteraction]
         ) {
@@ -757,7 +757,7 @@ class ReaderViewController: BaseObservingViewController {
 
         let screenWidth = targetView.window?.bounds.width ?? UIScreen.main.bounds.width
         UIView.animate(
-            withDuration: 0.38,
+            withDuration: 0.22,
             delay: 0,
             options: [.curveEaseIn, .allowUserInteraction]
         ) {
