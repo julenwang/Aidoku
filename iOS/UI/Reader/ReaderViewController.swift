@@ -674,7 +674,7 @@ class ReaderViewController: BaseObservingViewController {
         UIView.animate(
             withDuration: 0.2,
             delay: 0,
-            options: [.curveEaseOut]
+            options: [.curveEaseOut, .allowUserInteraction]
         ) {
             targetView.transform = CGAffineTransform(translationX: 0, y: screenHeight)
         } completion: { [weak self] _ in
@@ -709,7 +709,7 @@ class ReaderViewController: BaseObservingViewController {
         UIView.animate(
             withDuration: 0.2,
             delay: 0,
-            options: [.curveEaseOut]
+            options: [.curveEaseOut, .allowUserInteraction]
         ) {
             targetView.transform = CGAffineTransform(translationX: screenWidth, y: 0)
         } completion: { [weak self] _ in
