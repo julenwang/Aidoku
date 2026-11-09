@@ -115,11 +115,25 @@ class ReaderViewController: BaseObservingViewController {
     }()
 
     @objc private func handleDismissPan(_ gesture: UIPanGestureRecognizer) {
-        guard gesture.state == .ended else { return }
         let translation = gesture.translation(in: view)
         let velocity = gesture.velocity(in: view)
-        if (translation.y > 60 && velocity.y > 0) || velocity.y > 400 {
-            close()
+        let isEligible = (translation.y > 60 && velocity.y > 0) || velocity.y > 400
+
+        switch gesture.state {
+        case .changed:
+            if isEligible {
+                prepareDismiss()
+            }
+        case .ended:
+            if isDismissPrepared || isEligible {
+                close()
+            } else {
+                cancelDismissPreparation()
+            }
+        case .cancelled, .failed:
+            cancelDismissPreparation()
+        default:
+            break
         }
     }
 
@@ -138,16 +152,56 @@ class ReaderViewController: BaseObservingViewController {
     }()
 
     @objc private func handleWebtoonEdgeDismiss(_ gesture: UIScreenEdgePanGestureRecognizer) {
-        guard gesture.state == .ended else { return }
         let translation = gesture.translation(in: view)
         let velocity = gesture.velocity(in: view)
-        if translation.x > 40 || velocity.x > 200 {
-            closeHorizontal()
+        let isEligible = translation.x > 40 || velocity.x > 200
+
+        switch gesture.state {
+        case .changed:
+            if isEligible {
+                prepareDismiss()
+            }
+        case .ended:
+            if isDismissPrepared || isEligible {
+                closeHorizontal()
+            } else {
+                cancelDismissPreparation()
+            }
+        case .cancelled, .failed:
+            cancelDismissPreparation()
+        default:
+            break
         }
     }
 
     var statusBarHidden = false
     private var isDismissing = false
+    private var isDismissPrepared = false
+    private var isClosing = false
+    private var wasStatusBarHiddenBeforeDismiss = false
+
+    private func prepareDismiss() {
+        guard !isDismissPrepared else { return }
+        isDismissPrepared = true
+        wasStatusBarHiddenBeforeDismiss = statusBarHidden
+        isDismissing = true
+        statusBarHidden = false
+        setNeedsStatusBarAppearanceUpdate()
+
+        if currentPage >= 1 {
+            Task {
+                await self.updateReadPosition()
+            }
+        }
+    }
+
+    private func cancelDismissPreparation() {
+        guard isDismissPrepared && !isClosing else { return }
+        isDismissPrepared = false
+        isDismissing = false
+        statusBarHidden = wasStatusBarHiddenBeforeDismiss
+        setNeedsStatusBarAppearanceUpdate()
+    }
 
     override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation {
         isDismissing ? .none : .fade
@@ -377,6 +431,8 @@ class ReaderViewController: BaseObservingViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         isDismissing = false
+        isDismissPrepared = false
+        isClosing = false
         view.isUserInteractionEnabled = true
         navigationController?.view.isUserInteractionEnabled = true
     }
@@ -648,6 +704,9 @@ class ReaderViewController: BaseObservingViewController {
     }
 
     @objc func close() {
+        guard !isClosing else { return }
+        isClosing = true
+
         view.isUserInteractionEnabled = false
         navigationController?.view.isUserInteractionEnabled = false
         dismissSwipeGesture.isEnabled = false
@@ -655,10 +714,8 @@ class ReaderViewController: BaseObservingViewController {
         webtoonEdgeDismissGesture.isEnabled = false
         webtoonSwipeDismissGesture.isEnabled = false
 
-        if currentPage >= 1 {
-            Task {
-                await self.updateReadPosition()
-            }
+        if !isDismissPrepared {
+            prepareDismiss()
         }
 
         guard let targetView = navigationController?.view ?? view else {
@@ -666,15 +723,11 @@ class ReaderViewController: BaseObservingViewController {
             return
         }
 
-        isDismissing = true
-        statusBarHidden = false
-        setNeedsStatusBarAppearanceUpdate()
-
         let screenHeight = targetView.window?.bounds.height ?? UIScreen.main.bounds.height
         UIView.animate(
-            withDuration: 0.2,
+            withDuration: 0.38,
             delay: 0,
-            options: [.curveEaseOut, .allowUserInteraction]
+            options: [.curveEaseIn, .allowUserInteraction]
         ) {
             targetView.transform = CGAffineTransform(translationX: 0, y: screenHeight)
         } completion: { [weak self] _ in
@@ -683,6 +736,9 @@ class ReaderViewController: BaseObservingViewController {
     }
 
     @objc func closeHorizontal() {
+        guard !isClosing else { return }
+        isClosing = true
+
         view.isUserInteractionEnabled = false
         navigationController?.view.isUserInteractionEnabled = false
         dismissSwipeGesture.isEnabled = false
@@ -690,10 +746,8 @@ class ReaderViewController: BaseObservingViewController {
         webtoonEdgeDismissGesture.isEnabled = false
         webtoonSwipeDismissGesture.isEnabled = false
 
-        if currentPage >= 1 {
-            Task {
-                await self.updateReadPosition()
-            }
+        if !isDismissPrepared {
+            prepareDismiss()
         }
 
         guard let targetView = navigationController?.view ?? view else {
@@ -701,15 +755,11 @@ class ReaderViewController: BaseObservingViewController {
             return
         }
 
-        isDismissing = true
-        statusBarHidden = false
-        setNeedsStatusBarAppearanceUpdate()
-
         let screenWidth = targetView.window?.bounds.width ?? UIScreen.main.bounds.width
         UIView.animate(
-            withDuration: 0.2,
+            withDuration: 0.38,
             delay: 0,
-            options: [.curveEaseOut, .allowUserInteraction]
+            options: [.curveEaseIn, .allowUserInteraction]
         ) {
             targetView.transform = CGAffineTransform(translationX: screenWidth, y: 0)
         } completion: { [weak self] _ in
